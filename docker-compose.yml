@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  auth-db:
+    image: postgres:15-alpine
+    container_name: auth-db
+    environment:
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: auth
+    ports:
+      - "5437:5432"
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    networks:
+      - codebase-network
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth-service
+    environment:
+      PORT: 8081
+      DATABASE_URL: postgres://postgres:auth@auth-db:5432/postgres?sslmode=disable
+      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      JWT_ACCESS_TTL: 15m
+      JWT_REFRESH_TTL: 168h # 7 days
+      BCRYPT_COST: 12
+    ports:
+      - "8081:8081"
+    depends_on:
+      - auth-db
+    networks:
+      - codebase-network
+    volumes:
+      - ./migrations:/app/migrations
+    restart: unless-stopped
+
+  # Redis for future caching needs
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - codebase-network
+    restart: unless-stopped
+
+volumes:
+  auth_db_data:
+
+networks:
+  codebase-network:
+    external: true
