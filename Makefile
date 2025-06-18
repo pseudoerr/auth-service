@@ -50,8 +50,7 @@ migrate-force:
 
 # Development helpers
 dev-setup:
-	cp .env.example .env
-	docker network create edtech-network || true
+	docker network create codebase-network || true
 	docker-compose up -d auth-db redis
 	sleep 5
 	make migrate-up
